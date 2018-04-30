@@ -21,12 +21,11 @@ import de.markustippner.appthemeengine.prefs.ATESwitchPreference;
 import de.markustippner.appthemeenginesample.base.BaseThemedActivity;
 import de.markustippner.appthemeenginesample.dialogs.AboutDialog;
 import de.markustippner.appthemeenginesample.dialogs.TextSizeDialog;
-import de.markustippner.materialdialogs.color.ColorChooserDialog;
-import de.markustippner.materialdialogs.prefs.MaterialListPreference;
+import com.afollestad.materialdialogs.color.ColorChooserDialog;
+import com.afollestad.materialdialogs.prefs.MaterialListPreference;
 
 @SuppressLint("NewApi")
-public class SettingsActivity extends BaseThemedActivity
-        implements ColorChooserDialog.ColorCallback, ATEActivityThemeCustomizer {
+public class SettingsActivity extends BaseThemedActivity implements ColorChooserDialog.ColorCallback, ATEActivityThemeCustomizer {
 
     @StyleRes
     @Override

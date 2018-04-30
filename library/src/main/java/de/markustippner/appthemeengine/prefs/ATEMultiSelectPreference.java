@@ -6,7 +6,7 @@ import android.util.AttributeSet;
 import android.view.View;
 import de.markustippner.appthemeengine.ATE;
 import de.markustippner.appthemeengine.R;
-import de.markustippner.materialdialogs.prefs.MaterialListPreference;
+import com.afollestad.materialdialogs.prefs.MaterialListPreference;
 
 public class ATEMultiSelectPreference extends MaterialListPreference {
 

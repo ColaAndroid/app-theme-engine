@@ -5,7 +5,7 @@ import android.content.res.ColorStateList;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import de.markustippner.appthemeengine.Config;
-import de.markustippner.materialdialogs.internal.ThemeSingleton;
+import com.afollestad.materialdialogs.internal.ThemeSingleton;
 
 public final class MDUtil {
 

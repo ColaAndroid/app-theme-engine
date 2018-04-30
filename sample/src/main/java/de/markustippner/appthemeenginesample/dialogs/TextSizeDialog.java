@@ -15,8 +15,8 @@ import android.widget.TextView;
 import de.markustippner.appthemeengine.ATE;
 import de.markustippner.appthemeengine.Config;
 import de.markustippner.appthemeenginesample.R;
-import de.markustippner.materialdialogs.DialogAction;
-import de.markustippner.materialdialogs.MaterialDialog;
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
 import java.util.Locale;
 
 public class TextSizeDialog extends DialogFragment implements MaterialDialog.SingleButtonCallback {

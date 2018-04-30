@@ -6,7 +6,7 @@ import android.util.AttributeSet;
 import android.view.View;
 import de.markustippner.appthemeengine.ATE;
 import de.markustippner.appthemeengine.R;
-import de.markustippner.materialdialogs.prefs.MaterialDialogPreference;
+import com.afollestad.materialdialogs.prefs.MaterialDialogPreference;
 
 public class ATEDialogPreference extends MaterialDialogPreference {
 

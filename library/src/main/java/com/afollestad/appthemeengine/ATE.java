@@ -131,7 +131,6 @@ public final class ATE extends ATEBase {
             if (Config.coloredNavigationBar(activity, key))
                 window.setNavigationBarColor(Config.navigationBarColor(activity, key));
             else window.setNavigationBarColor(Color.BLACK);
-            applyTaskDescription(activity, key);
         }
     }
 

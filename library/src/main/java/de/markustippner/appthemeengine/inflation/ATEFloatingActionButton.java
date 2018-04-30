@@ -1,0 +1,41 @@
+package de.markustippner.appthemeengine.inflation;
+
+import android.content.Context;
+import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
+import android.util.AttributeSet;
+import de.markustippner.appthemeengine.ATEActivity;
+import de.markustippner.appthemeengine.tagprocessors.ATEDefaultTags;
+
+public class ATEFloatingActionButton extends FloatingActionButton implements ViewInterface {
+
+    public ATEFloatingActionButton(Context context) {
+        super(context);
+        init(context, null);
+    }
+
+    public ATEFloatingActionButton(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init(context, null);
+    }
+
+    public ATEFloatingActionButton(Context context, AttributeSet attrs, @Nullable ATEActivity keyContext) {
+        super(context, attrs);
+        init(context, keyContext);
+    }
+
+    private void init(Context context, @Nullable ATEActivity keyContext) {
+        ATEDefaultTags.process(this);
+        ATEViewUtil.init(keyContext, this, context);
+    }
+
+    @Override
+    public boolean setsStatusBarColor() {
+        return false;
+    }
+
+    @Override
+    public boolean setsToolbarColor() {
+        return false;
+    }
+}

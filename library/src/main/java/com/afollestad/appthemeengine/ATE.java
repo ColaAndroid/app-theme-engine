@@ -228,32 +228,6 @@ public final class ATE extends ATEBase {
             MDUtil.initMdSupport(activity, key);
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    private static void applyTaskDescription(@NonNull Activity activity, @Nullable String key) {
-        int color = 0;
-        Bitmap icon = null;
-        if (activity instanceof ATETaskDescriptionCustomizer) {
-            final ATETaskDescriptionCustomizer customizer = (ATETaskDescriptionCustomizer) activity;
-            color = customizer.getTaskDescriptionColor();
-            icon = customizer.getTaskDescriptionIcon();
-            if (color == ATE.USE_DEFAULT)
-                color = Config.primaryColor(activity, key);
-        } else {
-            color = Config.primaryColor(activity, key);
-        }
-
-        // Task description requires fully opaque color
-        color = ATEUtil.stripAlpha(color);
-        // Default is app's launcher icon
-        if (icon == null)
-            icon = ((BitmapDrawable) activity.getApplicationInfo().loadIcon(activity.getPackageManager())).getBitmap();
-
-        // Sets color of entry in the system recents page
-        ActivityManager.TaskDescription td = new ActivityManager.TaskDescription(
-                (String) activity.getTitle(), icon, color);
-        activity.setTaskDescription(td);
-    }
-
     @Nullable
     private static Toolbar getPostInflationToolbar() {
         synchronized (IGNORE_TAG) {

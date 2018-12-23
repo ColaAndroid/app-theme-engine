@@ -33,34 +33,62 @@ import java.util.ArrayList;
 
 public final class ATE extends ATEBase {
 
-    public static final String IGNORE_TAG = "ate_ignore";
-    public static final int USE_DEFAULT = Integer.MAX_VALUE;
-
-    /**
-     * @hide
-     */
-    public static <T extends View> void addPostInflationView(T view) {
-        if (mPostInflationApply == null)
-            mPostInflationApply = new ArrayList<>();
-        mPostInflationApply.add(view);
+    private static boolean isPreMadeView(@NonNull View view) {
+        return view.getClass().getAnnotation(PreMadeView.class) != null;
     }
 
-    private static ArrayList<View> mPostInflationApply;
+    private static boolean isChildrenBlacklistedViewGroup(@NonNull ViewGroup view) {
+        // We don't want to theme children in these views
+        return view instanceof ListView || view instanceof RecyclerView || view instanceof TabLayout;
+    }
 
     @SuppressWarnings("unchecked")
     private static void performDefaultProcessing(@NonNull Context context, @NonNull View current, @Nullable String key) {
         if (current.getTag() != null && current.getTag() instanceof String) {
             // Apply default processor to view if view's tag is a String
-            ViewProcessor viewProcessor = getViewProcessor(null); // gets default viewProcessor
-            if (viewProcessor != null)
-                viewProcessor.process(context, key, current, null);
+            Processor processor = getProcessor(null); // gets default processor
+            if (processor != null)
+                processor.process(context, key, current, null);
         }
     }
 
-    public static void cleanup() {
-        if (mPostInflationApply != null) {
-            mPostInflationApply.clear();
-            mPostInflationApply = null;
+    @SuppressWarnings("unchecked")
+    private static void apply(@NonNull Context context, @NonNull ViewGroup view, @Nullable String key) {
+        Processor processor = getProcessor(view.getClass());
+        if (processor != null) {
+            processor.process(context, key, view, null);
+        }
+        if (isChildrenBlacklistedViewGroup(view)) {
+            performDefaultProcessing(context, view, key);
+            return;
+        }
+
+        for (int i = 0; i < view.getChildCount(); i++) {
+            final View current = view.getChildAt(i);
+            if (current instanceof Toolbar && mToolbar == null)
+                mToolbar = (Toolbar) current;
+
+            // Pre-made views handle themselves, don't need to apply theming
+            if (isPreMadeView(current)) {
+                continue;
+            }
+
+            performDefaultProcessing(context, current, key);
+
+            if (current instanceof ViewGroup) {
+                // View group will apply theming to itself and then children inside
+                apply(context, (ViewGroup) current, key);
+            } else {
+                processor = getProcessor(current.getClass());
+                if (processor != null) {
+                    // Apply view theming using processors, if any match
+                    processor.process(context, key, current, null);
+                }
+            }
+
+            if (current instanceof CoordinatorLayout) {
+                ((CoordinatorLayout) current).setStatusBarBackgroundColor(Config.statusBarColor(context, key));
+            }
         }
     }
 
@@ -69,66 +97,28 @@ public final class ATE extends ATEBase {
     }
 
     @SuppressLint("CommitPrefEdits")
-    private static boolean didValuesChange(@NonNull Context context, long updateTime, @Nullable String key) {
+    public static boolean didValuesChange(@NonNull Context context, long updateTime, @Nullable String key) {
         return ATE.config(context, key).isConfigured() && Config.prefs(context, key).getLong(Config.VALUES_CHANGED, -1) > updateTime;
-    }
-
-    public static boolean invalidateActivity(final @NonNull Activity activity, long updateTime, @Nullable String ateKey) {
-        if (ATE.didValuesChange(activity, updateTime, ateKey)) {
-            // hack to prevent java.lang.RuntimeException: Performing pause of activity that is not resumed
-            // makes sure recreate() is called right after and not in onResume()
-            new Handler().post(new Runnable() {
-                @Override
-                public void run() {
-                    activity.recreate();
-                }
-            });
-            return true;
-        }
-        return false;
     }
 
     public static void preApply(@NonNull Activity activity, @Nullable String key) {
         didPreApply = activity.getClass();
-        synchronized (IGNORE_TAG) {
-            if (mPostInflationApply != null) {
-                mPostInflationApply.clear();
-                mPostInflationApply = null;
-            }
-        }
+        mToolbar = null;
+
         int activityTheme = activity instanceof ATEActivityThemeCustomizer ?
                 ((ATEActivityThemeCustomizer) activity).getActivityTheme() : Config.activityTheme(activity, key);
         if (activityTheme != 0) activity.setTheme(activityTheme);
 
-        final LayoutInflater li = activity.getLayoutInflater();
-        ATEUtil.setInflaterFactory(li, activity);
-    }
-
-    public static View getRootView(Activity activity) {
-        return ((ViewGroup) activity.findViewById(android.R.id.content)).getChildAt(0);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static void performMainTheming(@NonNull Activity activity, @Nullable String key) {
-        final View rootView = getRootView(activity);
-        final boolean rootSetsStatusBarColor = rootView != null && rootView instanceof ViewInterface &&
-                ((ViewInterface) rootView).setsStatusBarColor();
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             final Window window = activity.getWindow();
-            if (!rootSetsStatusBarColor) {
-                if (Config.coloredStatusBar(activity, key))
-                    window.setStatusBarColor(Config.statusBarColor(activity, key));
-                else window.setStatusBarColor(Color.BLACK);
-                invalidateLightStatusBar(activity, key);
-            }
+            if (Config.coloredStatusBar(activity, key))
+                window.setStatusBarColor(Config.statusBarColor(activity, key));
+            else window.setStatusBarColor(Color.BLACK);
             if (Config.coloredNavigationBar(activity, key))
                 window.setNavigationBarColor(Config.navigationBarColor(activity, key));
             else window.setNavigationBarColor(Color.BLACK);
+            applyTaskDescription(activity, key);
         }
-    }
-
-    public static void invalidateLightStatusBar(@NonNull Activity activity, @Nullable String key) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             final View decorView = activity.getWindow().getDecorView();
             boolean lightStatusEnabled = false;
@@ -142,7 +132,7 @@ public final class ATE extends ATEBase {
                         lightStatusEnabled = true;
                         break;
                     case Config.LIGHT_STATUS_BAR_AUTO:
-                        lightStatusEnabled = ATEUtil.isColorLight(Config.primaryColor(activity, key));
+                        lightStatusEnabled = Util.isColorLight(Config.primaryColor(activity, key));
                         break;
                 }
             }
@@ -154,105 +144,158 @@ public final class ATE extends ATEBase {
                 decorView.setSystemUiVisibility(systemUiVisibility & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             }
         }
-    }
 
-    public static void themeView(@NonNull View view, @Nullable String key) {
-        if (view.getContext() == null)
-            throw new IllegalStateException("View has no Context, use apply(Context, View, String) instead.");
-        themeView(view.getContext(), view, key);
-    }
-
-    @SuppressWarnings("unchecked")
-    public static void themeView(@NonNull Context context, @NonNull View view, @Nullable String key) {
-        if (IGNORE_TAG.equals(view.getTag())) return;
-        performDefaultProcessing(context, view, key);
-
-        final ViewProcessor viewProcessor = getViewProcessor(view.getClass());
-        if (viewProcessor != null) {
-            // Apply view theming using processors, if any match
-            viewProcessor.process(context, key, view, null);
+        // MD integration
+        if (Config.usingMaterialDialogs(activity, key)) {
+            final ThemeSingleton md = ThemeSingleton.get();
+            md.titleColor = Config.textColorPrimary(activity, key);
+            md.contentColor = Config.textColorSecondary(activity, key);
+            md.itemColor = md.titleColor;
+            md.widgetColor = Config.accentColor(activity, key);
+            md.linkColor = ColorStateList.valueOf(md.widgetColor);
+            md.positiveColor = ColorStateList.valueOf(md.widgetColor);
+            md.neutralColor = ColorStateList.valueOf(md.widgetColor);
+            md.negativeColor = ColorStateList.valueOf(md.widgetColor);
         }
     }
 
-    /**
-     * @deprecated use postApply() instead. This method will throw an Exception.
-     */
-    @Deprecated
-    public static void apply(@NonNull Activity activity, @Nullable String key) throws IllegalStateException {
-        throw new IllegalStateException("ATE.apply() is no longer used, ATE intercepts views at inflation time. Use postApply() here instead.");
+    public static void apply(@NonNull View view, @Nullable String key) {
+        if (view.getContext() == null)
+            throw new IllegalStateException("View has no Context, use apply(Context, View, String) instead.");
+        apply(view.getContext(), view, key);
     }
 
     @SuppressWarnings("unchecked")
-    public static void postApply(@NonNull Activity activity, @Nullable String key) {
+    public static void apply(@NonNull Context context, @NonNull View view, @Nullable String key) {
+        performDefaultProcessing(context, view, key);
+        if (view instanceof ViewGroup)
+            apply(context, (ViewGroup) view, key);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void apply(@NonNull Activity activity, @Nullable String key) {
         if (didPreApply == null)
             preApply(activity, key);
-        performMainTheming(activity, key);
-
-        final View rootView = getRootView(activity);
-        final boolean rootSetsToolbarColor = rootView != null && rootView instanceof ViewInterface &&
-                ((ViewInterface) rootView).setsToolbarColor();
-
-        if (!rootSetsToolbarColor && Config.coloredActionBar(activity, key)) {
+        if (Config.coloredActionBar(activity, key)) {
             if (activity instanceof AppCompatActivity) {
                 final AppCompatActivity aca = (AppCompatActivity) activity;
                 if (aca.getSupportActionBar() != null) {
-                    ViewProcessor toolbarViewProcessor = getViewProcessor(Toolbar.class);
-                    if (toolbarViewProcessor != null) {
-                        // The processor handles retrieving the toolbar from the support action bar
-                        toolbarViewProcessor.process(activity, key, null, null);
+                    Toolbar toolbar = Util.getSupportActionBarView(aca.getSupportActionBar());
+                    if (toolbar == null)
+                        aca.getSupportActionBar().setBackgroundDrawable(new ColorDrawable(Config.toolbarColor(activity, key)));
+                    Processor toolbarProcessor = getProcessor(Toolbar.class);
+                    if (toolbarProcessor != null) {
+                        // The processor handles retrieving the toolbar
+                        toolbarProcessor.process(activity, key, null, null);
                     }
                 }
             } else if (activity.getActionBar() != null) {
-                activity.getActionBar().setBackgroundDrawable(new ColorDrawable(Config.toolbarColor(activity, key, null)));
+                activity.getActionBar().setBackgroundDrawable(new ColorDrawable(Config.toolbarColor(activity, key)));
             }
         }
 
-        if (mPostInflationApply != null) {
-            synchronized (IGNORE_TAG) {
-                for (View view : mPostInflationApply) {
-                    if (view instanceof PostInflationApplier)
-                        ((PostInflationApplier) view).postApply();
-                    else ATE.themeView(activity, view, key);
-                }
+        final ViewGroup rootView = (ViewGroup) ((ViewGroup) activity.findViewById(android.R.id.content)).getChildAt(0);
+        if (rootView instanceof DrawerLayout) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                final int color = Config.coloredStatusBar(activity, key) ?
+                        Color.TRANSPARENT : Color.BLACK;
+                activity.getWindow().setStatusBarColor(color);
             }
+            if (Config.coloredStatusBar(activity, key))
+                ((DrawerLayout) rootView).setStatusBarBackgroundColor(Config.statusBarColor(activity, key));
         }
 
-        if (ATEUtil.isInClassPath(MDUtil.MAIN_CLASS))
-            MDUtil.initMdSupport(activity, key);
+        apply(activity, rootView, key);
+        didPreApply = null;
     }
 
-    @Nullable
-    private static Toolbar getPostInflationToolbar() {
-        synchronized (IGNORE_TAG) {
-            if (mPostInflationApply == null) return null;
-            for (View view : mPostInflationApply) {
-                if (view instanceof Toolbar)
-                    return (Toolbar) view;
-            }
-            return null;
+    public static void apply(@NonNull android.support.v4.app.Fragment fragment, @Nullable String key) {
+        if (fragment.getActivity() == null)
+            throw new IllegalStateException("Fragment is not attached to an Activity yet.");
+        final View fragmentView = fragment.getView();
+        if (fragmentView == null)
+            throw new IllegalStateException("Fragment does not have a View yet.");
+        if (fragmentView instanceof ViewGroup)
+            apply(fragment.getActivity(), (ViewGroup) fragmentView, key);
+        else apply(fragment.getActivity(), fragmentView, key);
+        if (fragment.getActivity() instanceof AppCompatActivity)
+            apply(fragment.getActivity(), key);
+    }
+
+    public static void apply(@NonNull android.app.Fragment fragment, @Nullable String key) {
+        if (fragment.getActivity() == null)
+            throw new IllegalStateException("Fragment is not attached to an Activity yet.");
+        else if (fragment.getView() == null)
+            throw new IllegalStateException("Fragment does not have a View yet.");
+        apply(fragment.getActivity(), (ViewGroup) fragment.getView(), key);
+        if (fragment.getActivity() instanceof AppCompatActivity)
+            apply(fragment.getActivity(), key);
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private static void applyTaskDescription(@NonNull Activity activity, @Nullable String key) {
+        int color;
+        Bitmap icon = null;
+        if (activity instanceof ATETaskDescriptionCustomizer) {
+            final ATETaskDescriptionCustomizer customizer = (ATETaskDescriptionCustomizer) activity;
+            color = customizer.getTaskDescriptionColor();
+            icon = customizer.getTaskDescriptionIcon();
+        } else {
+            color = Config.primaryColor(activity, key);
         }
+
+        // Task description requires fully opaque color
+        color = Util.stripAlpha(color);
+        // Default is app's launcher icon
+        if (icon == null)
+            icon = ((BitmapDrawable) activity.getApplicationInfo().loadIcon(activity.getPackageManager())).getBitmap();
+
+        // Sets color of entry in the system recents page
+        ActivityManager.TaskDescription td = new ActivityManager.TaskDescription(
+                (String) activity.getTitle(), icon, color);
+        activity.setTaskDescription(td);
     }
 
     @SuppressWarnings("unchecked")
-    public static void themeOverflow(@NonNull Activity activity, @Nullable String key) {
-        final Toolbar toolbar = getPostInflationToolbar();
-        final int toolbarColor = Config.toolbarColor(activity, key, toolbar);
-        final int tintColor = Config.getToolbarTitleColor(activity, toolbar, key, toolbarColor);
+    public static void applyMenu(@NonNull Activity activity, @Nullable String key, @Nullable Menu menu) {
+        Processor toolbarProcessor = getProcessor(Toolbar.class);
+        if (toolbarProcessor != null)
+            toolbarProcessor.process(activity, key, mToolbar, menu);
+    }
 
-        // The collapse icon displays when action views are expanded (e.g. SearchView)
-        try {
-            final Field field = Toolbar.class.getDeclaredField("mCollapseIcon");
-            field.setAccessible(true);
-            Drawable collapseIcon = (Drawable) field.get(toolbar);
-            if (collapseIcon != null)
-                field.set(toolbar, TintHelper.createTintedDrawable(collapseIcon, tintColor));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public static void applyOverflow(@NonNull AppCompatActivity activity, @Nullable String key) {
+        final Toolbar toolbar = mToolbar != null ? mToolbar : Util.getSupportActionBarView(activity.getSupportActionBar());
+        applyOverflow(activity, key, toolbar);
+    }
 
-        if (toolbar != null && toolbar.getParent() instanceof CollapsingToolbarLayout)
-            return; // collapsing toolbar handles the overflow color
-        ATEUtil.setOverflowButtonColor(activity, toolbar, tintColor);
+    public static void applyOverflow(final @NonNull Activity activity, final @Nullable String key, final @Nullable Toolbar toolbar) {
+        if (toolbar == null) return;
+        toolbar.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Field f1 = Toolbar.class.getDeclaredField("mMenuView");
+                    f1.setAccessible(true);
+                    ActionMenuView actionMenuView = (ActionMenuView) f1.get(toolbar);
+                    Field f2 = ActionMenuView.class.getDeclaredField("mPresenter");
+                    f2.setAccessible(true);
+
+                    // Actually ActionMenuPresenter
+                    BaseMenuPresenter presenter = (BaseMenuPresenter) f2.get(actionMenuView);
+                    Field f3 = presenter.getClass().getDeclaredField("mOverflowPopup");
+                    f3.setAccessible(true);
+//                    MenuPopupHelper overflowMenuPopupHelper = (MenuPopupHelper) f3.get(presenter);
+//                    setTintForMenuPopupHelper(activity, overflowMenuPopupHelper, key);
+
+                    Field f4 = presenter.getClass().getDeclaredField("mActionButtonPopup");
+                    f4.setAccessible(true);
+//                    MenuPopupHelper subMenuPopupHelper = (MenuPopupHelper) f4.get(presenter);
+//                    setTintForMenuPopupHelper(activity, subMenuPopupHelper, key);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     private ATE() {

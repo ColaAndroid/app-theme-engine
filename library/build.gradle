@@ -8,7 +8,7 @@ android {
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 2
+        versionCode 3
         versionName "1.0.1"
     }
     buildTypes {
@@ -17,11 +17,15 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    repositories {
-        jcenter()
-        maven {
-            url 'https://maven.google.com'
-        }
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
+repositories {
+    jcenter()
+    maven {
+        url 'https://maven.google.com'
     }
 }
 

@@ -1,17 +1,15 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion "27.0.3"
-
+    compileSdkVersion 28
     lintOptions {
         abortOnError false
     }
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 27
-        versionCode 1
-        versionName "1.0"
+        targetSdkVersion 28
+        versionCode 2
+        versionName "1.0.1"
     }
     buildTypes {
         release {
@@ -22,9 +20,9 @@ android {
 }
 
 dependencies {
-    implementation 'com.android.support:appcompat-v7:27.1.1'
-    implementation 'com.android.support:design:27.1.1'
-    compileOnly 'com.android.support:cardview-v7:27.1.1'
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation 'com.android.support:design:28.0.0'
+    compileOnly 'com.android.support:cardview-v7:28.0.0'
     compileOnly 'com.github.afollestad.material-dialogs:core:0.8.5.4@aar'
     compileOnly 'com.github.afollestad.material-dialogs:commons:0.8.5.4@aar'
 }

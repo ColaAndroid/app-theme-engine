@@ -2,106 +2,72 @@ package de.markustippner.appthemeengine;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.NavigationView;
+import android.support.design.widget.TabLayout;
+import android.support.v4.widget.NestedScrollView;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
-import android.widget.SearchView;
-import de.markustippner.appthemeengine.tagprocessors.BackgroundTagProcessor;
-import de.markustippner.appthemeengine.tagprocessors.EdgeGlowTagProcessor;
-import de.markustippner.appthemeengine.tagprocessors.FontTagProcessor;
-import de.markustippner.appthemeengine.tagprocessors.TabLayoutTagProcessor;
-import de.markustippner.appthemeengine.tagprocessors.TagProcessor;
-import de.markustippner.appthemeengine.tagprocessors.TextColorTagProcessor;
-import de.markustippner.appthemeengine.tagprocessors.TextShadowColorTagProcessor;
-import de.markustippner.appthemeengine.tagprocessors.TextSizeTagProcessor;
-import de.markustippner.appthemeengine.tagprocessors.TintTagProcessor;
-import de.markustippner.appthemeengine.util.ATEUtil;
-import de.markustippner.appthemeengine.viewprocessors.DefaultProcessor;
-import de.markustippner.appthemeengine.viewprocessors.NavigationViewProcessor;
-import de.markustippner.appthemeengine.viewprocessors.SearchViewProcessor;
-import de.markustippner.appthemeengine.viewprocessors.ToolbarProcessor;
-import de.markustippner.appthemeengine.viewprocessors.ViewProcessor;
+import android.widget.ListView;
+import android.widget.ScrollView;
+import de.markustippner.appthemeengine.processors.DefaultProcessor;
+import de.markustippner.appthemeengine.processors.ListViewProcessor;
+import de.markustippner.appthemeengine.processors.NavigationViewProcessor;
+import de.markustippner.appthemeengine.processors.NestedScrollViewProcessor;
+import de.markustippner.appthemeengine.processors.Processor;
+import de.markustippner.appthemeengine.processors.RecyclerViewProcessor;
+import de.markustippner.appthemeengine.processors.ScrollViewProcessor;
+import de.markustippner.appthemeengine.processors.SearchViewProcessor;
+import de.markustippner.appthemeengine.processors.TabLayoutProcessor;
+import de.markustippner.appthemeengine.processors.ToolbarProcessor;
 import java.util.HashMap;
 
 class ATEBase {
 
     protected final static String DEFAULT_PROCESSOR = "[default]";
 
-    private static HashMap<String, ViewProcessor> mViewProcessors;
-    private static HashMap<String, TagProcessor> mTagProcessors;
+    private static HashMap<String, Processor> mProcessors;
 
-    private static void initViewProcessors() {
-        mViewProcessors = new HashMap<>(5);
-        mViewProcessors.put(DEFAULT_PROCESSOR, new DefaultProcessor());
-
-        mViewProcessors.put(SearchView.class.getName(), new SearchViewProcessor());
-        mViewProcessors.put(Toolbar.class.getName(), new ToolbarProcessor());
-
-        if (ATEUtil.isInClassPath(NavigationViewProcessor.MAIN_CLASS))
-            mViewProcessors.put(NavigationViewProcessor.MAIN_CLASS, new NavigationViewProcessor());
-        else Log.d("ATEBase", "NavigationView isn't in the class path. Ignoring.");
-        if (ATEUtil.isInClassPath(SearchViewProcessor.MAIN_CLASS))
-            mViewProcessors.put(SearchViewProcessor.MAIN_CLASS, new SearchViewProcessor());
-        else Log.d("ATEBase", "SearchView isn't in the class path. Ignoring.");
+    private static void initProcessors() {
+        mProcessors = new HashMap<>();
+        mProcessors.put(DEFAULT_PROCESSOR, new DefaultProcessor());
+        mProcessors.put(ScrollView.class.getName(), new ScrollViewProcessor());
+        mProcessors.put(NestedScrollView.class.getName(), new NestedScrollViewProcessor());
+        mProcessors.put(ListView.class.getName(), new ListViewProcessor());
+        mProcessors.put(RecyclerView.class.getName(), new RecyclerViewProcessor());
+        mProcessors.put(Toolbar.class.getName(), new ToolbarProcessor());
+        mProcessors.put(NavigationView.class.getName(), new NavigationViewProcessor());
+        mProcessors.put(TabLayout.class.getName(), new TabLayoutProcessor());
+        mProcessors.put(SearchView.class.getName(), new SearchViewProcessor());
     }
 
     @SuppressWarnings("unchecked")
     @Nullable
-    public static <T extends View> ViewProcessor<T, ?> getViewProcessor(@Nullable Class<T> viewClass) {
-        if (mViewProcessors == null)
-            initViewProcessors();
+    public static <T extends View> Processor<T, ?> getProcessor(@Nullable Class<T> viewClass) {
+        if (mProcessors == null)
+            initProcessors();
         if (viewClass == null)
-            return mViewProcessors.get(DEFAULT_PROCESSOR);
-        ViewProcessor viewProcessor = mViewProcessors.get(viewClass.getName());
-        if (viewProcessor != null)
-            return viewProcessor;
+            return mProcessors.get(DEFAULT_PROCESSOR);
+        Processor processor = mProcessors.get(viewClass.getName());
+        if (processor != null)
+            return processor;
         Class<?> current = viewClass;
         while (true) {
             current = current.getSuperclass();
-            if (current == null || current.getName().equals(View.class.getName()))
-                break;
-            viewProcessor = mViewProcessors.get(current.getName());
-            if (viewProcessor != null) break;
+            if (current == null) break;
+            processor = mProcessors.get(current.getName());
+            if (processor != null) break;
         }
-        return viewProcessor;
+        return processor;
     }
 
-    public static <T extends View> void registerViewProcessor(@NonNull Class<T> viewCls, @NonNull ViewProcessor<T, ?> viewProcessor) {
-        if (mViewProcessors == null)
-            initViewProcessors();
-        mViewProcessors.put(viewCls.getName(), viewProcessor);
-    }
-
-    private static void initTagProcessors() {
-        mTagProcessors = new HashMap<>(14);
-        mTagProcessors.put(BackgroundTagProcessor.PREFIX, new BackgroundTagProcessor());
-        mTagProcessors.put(FontTagProcessor.PREFIX, new FontTagProcessor());
-        mTagProcessors.put(TextColorTagProcessor.PREFIX, new TextColorTagProcessor(false, false));
-        mTagProcessors.put(TextColorTagProcessor.LINK_PREFIX, new TextColorTagProcessor(true, false));
-        mTagProcessors.put(TextColorTagProcessor.HINT_PREFIX, new TextColorTagProcessor(false, true));
-        mTagProcessors.put(TextShadowColorTagProcessor.PREFIX, new TextShadowColorTagProcessor());
-        mTagProcessors.put(TextSizeTagProcessor.PREFIX, new TextSizeTagProcessor());
-        mTagProcessors.put(TintTagProcessor.PREFIX, new TintTagProcessor(false, false, false));
-        mTagProcessors.put(TintTagProcessor.BACKGROUND_PREFIX, new TintTagProcessor(true, false, false));
-        mTagProcessors.put(TintTagProcessor.SELECTOR_PREFIX, new TintTagProcessor(false, true, false));
-        mTagProcessors.put(TintTagProcessor.SELECTOR_PREFIX_LIGHT, new TintTagProcessor(false, true, true));
-        mTagProcessors.put(TabLayoutTagProcessor.TEXT_PREFIX, new TabLayoutTagProcessor(true, false));
-        mTagProcessors.put(TabLayoutTagProcessor.INDICATOR_PREFIX, new TabLayoutTagProcessor(false, true));
-        mTagProcessors.put(EdgeGlowTagProcessor.PREFIX, new EdgeGlowTagProcessor());
-    }
-
-    @Nullable
-    public static TagProcessor getTagProcessor(@NonNull String prefix) {
-        if (mTagProcessors == null)
-            initTagProcessors();
-        return mTagProcessors.get(prefix);
-    }
-
-    public static void registerTagProcessor(@NonNull String prefix, @NonNull TagProcessor tagProcessor) {
-        if (mTagProcessors == null)
-            initTagProcessors();
-        mTagProcessors.put(prefix, tagProcessor);
+    public static <T extends View> void registerProcessor(@NonNull Class<T> viewCls, @NonNull Processor<T, ?> processor) {
+        if (mProcessors == null)
+            initProcessors();
+        mProcessors.put(viewCls.getName(), processor);
     }
 
     protected static Class<?> didPreApply = null;
+    protected static Toolbar mToolbar = null;
 }

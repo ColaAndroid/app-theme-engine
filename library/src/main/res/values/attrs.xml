@@ -1,10 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Preferences -->
+    <declare-styleable name="ATECheckBox">
+        <attr name="ateKey_checkBox" format="string" />
+    </declare-styleable>
 
-    <declare-styleable name="ATEPreference">
-        <attr name="ateKey_pref" format="string" />
+    <declare-styleable name="ATEEditText">
+        <attr name="ateKey_editText" format="string" />
+    </declare-styleable>
+
+    <declare-styleable name="ATEPrimaryTextView">
+        <attr name="ateKey_primaryTextView" format="string" />
+    </declare-styleable>
+
+    <declare-styleable name="ATEProgressBar">
+        <attr name="ateKey_progressBar" format="string" />
+    </declare-styleable>
+
+    <declare-styleable name="ATERadioButton">
+        <attr name="ateKey_radioButton" format="string" />
+    </declare-styleable>
+
+    <declare-styleable name="ATESecondaryTextView">
+        <attr name="ateKey_secondaryTextView" format="string" />
+    </declare-styleable>
+
+    <declare-styleable name="ATESeekBar">
+        <attr name="ateKey_seekBar" format="string" />
+    </declare-styleable>
+
+    <declare-styleable name="ATESwitch">
+        <attr name="ateKey_switch" format="string" />
     </declare-styleable>
 
     <declare-styleable name="ATECheckBoxPreference">

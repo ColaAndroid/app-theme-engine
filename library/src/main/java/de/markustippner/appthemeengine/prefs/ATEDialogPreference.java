@@ -4,9 +4,10 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.util.AttributeSet;
 import android.view.View;
-import de.markustippner.appthemeengine.ATE;
-import de.markustippner.appthemeengine.R;
 import com.afollestad.materialdialogs.prefs.MaterialDialogPreference;
+import de.markustippner.appthemeengine.ATE;
+import de.markustippner.appthemeengine.Config;
+import de.markustippner.appthemeengine.R;
 
 public class ATEDialogPreference extends MaterialDialogPreference {
 
@@ -43,11 +44,17 @@ public class ATEDialogPreference extends MaterialDialogPreference {
                 a.recycle();
             }
         }
+
+        if (!Config.usingMaterialDialogs(context, mKey)) {
+            ATE.config(context, mKey)
+                    .usingMaterialDialogs(true)
+                    .commit();
+        }
     }
 
     @Override
     protected void onBindView(View view) {
         super.onBindView(view);
-        ATE.themeView(view, mKey);
+        ATE.apply(view, mKey);
     }
 }

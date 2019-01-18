@@ -5,31 +5,34 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.design.widget.CollapsingToolbarLayout;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.TabLayout;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.view.menu.BaseMenuPresenter;
+import android.support.v7.widget.ActionMenuView;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.ListView;
 import de.markustippner.appthemeengine.customizers.ATEActivityThemeCustomizer;
 import de.markustippner.appthemeengine.customizers.ATETaskDescriptionCustomizer;
-import de.markustippner.appthemeengine.inflation.PostInflationApplier;
-import de.markustippner.appthemeengine.inflation.ViewInterface;
-import de.markustippner.appthemeengine.util.ATEUtil;
-import de.markustippner.appthemeengine.util.MDUtil;
-import de.markustippner.appthemeengine.util.TintHelper;
-import de.markustippner.appthemeengine.viewprocessors.ViewProcessor;
+import de.markustippner.appthemeengine.processors.Processor;
+import de.markustippner.appthemeengine.util.Util;
+import de.markustippner.appthemeengine.views.PreMadeView;
+import com.afollestad.materialdialogs.internal.ThemeSingleton;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 
 public final class ATE extends ATEBase {
 
@@ -297,6 +300,8 @@ public final class ATE extends ATEBase {
             }
         });
     }
+
+
 
     private ATE() {
     }

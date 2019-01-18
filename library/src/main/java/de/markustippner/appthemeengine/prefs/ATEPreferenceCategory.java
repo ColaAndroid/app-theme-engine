@@ -7,10 +7,8 @@ import android.preference.PreferenceCategory;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.TextView;
-import de.markustippner.appthemeengine.ATE;
+import de.markustippner.appthemeengine.Config;
 import de.markustippner.appthemeengine.R;
-import de.markustippner.appthemeengine.tagprocessors.TextColorTagProcessor;
-import de.markustippner.appthemeengine.tagprocessors.TextSizeTagProcessor;
 
 public class ATEPreferenceCategory extends PreferenceCategory {
 
@@ -41,8 +39,6 @@ public class ATEPreferenceCategory extends PreferenceCategory {
     protected void onBindView(View view) {
         super.onBindView(view);
         TextView mTitle = (TextView) view.findViewById(android.R.id.title);
-        mTitle.setTag(String.format("%s|body,%s|accent_color",
-                TextSizeTagProcessor.PREFIX, TextColorTagProcessor.PREFIX));
-        ATE.themeView(mTitle, mAteKey);
+        mTitle.setTextColor(Config.accentColor(view.getContext(), mAteKey));
     }
 }

@@ -5,13 +5,10 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.Build;
 import android.preference.CheckBoxPreference;
-import android.preference.Preference;
 import android.util.AttributeSet;
 import android.view.View;
-import android.widget.CheckBox;
 import de.markustippner.appthemeengine.ATE;
 import de.markustippner.appthemeengine.R;
-import java.lang.reflect.Field;
 
 public class ATECheckBoxPreference extends CheckBoxPreference {
 
@@ -50,31 +47,11 @@ public class ATECheckBoxPreference extends CheckBoxPreference {
                 a.recycle();
             }
         }
-
-        try {
-            Field canRecycleLayoutField = Preference.class.getDeclaredField("mCanRecycleLayout");
-            canRecycleLayoutField.setAccessible(true);
-            canRecycleLayoutField.setBoolean(this, true);
-        } catch (Exception ignored) {
-        }
-
-        try {
-            Field hasSpecifiedLayout = Preference.class.getDeclaredField("mHasSpecifiedLayout");
-            hasSpecifiedLayout.setAccessible(true);
-            hasSpecifiedLayout.setBoolean(this, true);
-        } catch (Exception ignored) {
-        }
     }
 
     @Override
     protected void onBindView(View view) {
         super.onBindView(view);
-
-        CheckBox checkbox = (CheckBox) view.findViewById(android.R.id.checkbox);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            checkbox.setBackground(null);
-        }
-
-        ATE.themeView(view, mKey);
+        ATE.apply(view, mKey);
     }
 }

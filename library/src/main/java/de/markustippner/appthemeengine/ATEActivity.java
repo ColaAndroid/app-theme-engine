@@ -10,7 +10,7 @@ public class ATEActivity extends AppCompatActivity {
     private long updateTime = -1;
 
     @Nullable
-    public String getATEKey() {
+    protected String getATEKey() {
         return null;
     }
 
@@ -24,25 +24,26 @@ public class ATEActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        ATE.postApply(this, getATEKey());
+        ATE.apply(this, getATEKey());
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        ATE.invalidateActivity(this, updateTime, getATEKey());
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (isFinishing())
-            ATE.cleanup();
+        if (ATE.didValuesChange(this, updateTime, getATEKey()))
+            recreate();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        ATE.themeOverflow(this, getATEKey());
+        if (menu.size() > 0)
+            ATE.applyMenu(this, getATEKey(), menu);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        ATE.applyOverflow(this, getATEKey());
+        return super.onPrepareOptionsMenu(menu);
     }
 }

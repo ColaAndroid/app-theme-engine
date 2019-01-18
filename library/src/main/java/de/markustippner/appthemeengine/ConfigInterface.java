@@ -5,7 +5,6 @@ import android.support.annotation.AttrRes;
 import android.support.annotation.CheckResult;
 import android.support.annotation.ColorInt;
 import android.support.annotation.ColorRes;
-import android.support.annotation.DimenRes;
 import android.support.annotation.IntRange;
 import android.support.annotation.NonNull;
 import android.support.annotation.StyleRes;
@@ -133,23 +132,19 @@ interface ConfigInterface {
 
     Config navigationViewSelectedBgAttr(@AttrRes int colorAttr);
 
-    // Text size
+    // Misc
 
-    Config textSizePxForMode(@IntRange(from = 1, to = Integer.MAX_VALUE) int pxValue, @Config.TextSizeMode String mode);
+    Config usingMaterialDialogs(boolean enabled);
 
-    Config textSizeSpForMode(@IntRange(from = 1, to = Integer.MAX_VALUE) int dpValue, @Config.TextSizeMode String mode);
-
-    Config textSizeResForMode(@DimenRes int resId, @Config.TextSizeMode String mode);
-
-    // Commit/themeView
+    // Commit/apply
 
     void commit();
 
     void apply(@NonNull Activity activity);
 
-    //    void themeView(@NonNull android.support.v4.app.Fragment fragment);
-//
-//    void themeView(@NonNull android.app.Fragment fragment);
-//
+    void apply(@NonNull android.support.v4.app.Fragment fragment);
+
+    void apply(@NonNull android.app.Fragment fragment);
+
     void apply(@NonNull View view);
 }

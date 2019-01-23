@@ -250,8 +250,7 @@ public final class ATE extends ATEBase {
         // Task description requires fully opaque color
         color = Util.stripAlpha(color);
         // Default is app's launcher icon
-        if (icon == null)
-            icon = ((BitmapDrawable) activity.getApplicationInfo().loadIcon(activity.getPackageManager())).getBitmap();
+        if (icon == null) icon = getBitmapFromDrawable(activity.getApplicationInfo().loadIcon(activity.getPackageManager()));
 
         // Sets color of entry in the system recents page
         ActivityManager.TaskDescription td = new ActivityManager.TaskDescription(
@@ -300,8 +299,15 @@ public final class ATE extends ATEBase {
             }
         });
     }
-
-
+    
+    @NonNull
+    static private Bitmap getBitmapFromDrawable(@NonNull Drawable drawable) {
+        final Bitmap bmp = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        final Canvas canvas = new Canvas(bmp);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+        return bmp;
+    }
 
     private ATE() {
     }

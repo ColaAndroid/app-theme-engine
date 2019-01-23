@@ -110,8 +110,7 @@ public final class ATE extends ATEBase {
         didPreApply = activity.getClass();
         mToolbar = null;
 
-        int activityTheme = activity instanceof ATEActivityThemeCustomizer ?
-                ((ATEActivityThemeCustomizer) activity).getActivityTheme() : Config.activityTheme(activity, key);
+        int activityTheme = activity instanceof ATEActivityThemeCustomizer ? ((ATEActivityThemeCustomizer) activity).getActivityTheme() : Config.activityTheme(activity, key);
         if (activityTheme != 0) activity.setTheme(activityTheme);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
